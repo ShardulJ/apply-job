@@ -40,6 +40,15 @@ tier, and builds a single combined context string (job description +
 resume text + match metadata) that can be handed off to something like the
 rewriter.
 
+**backend/orchestrator.py**
+Wires everything above into one pipeline. `run_pipeline(job_description,
+resumes)` runs a cheap TF-IDF screen across all resumes first, and if the
+best score comes back as a skip tier, it logs why and returns early
+without touching the embedding model or the Claude API. Otherwise it picks
+the best resume, assembles context, and rewrites the weak bullets, then
+returns a single dict with `tier`, `best_resume`, `match_score`,
+`tweaked_bullets`, and a final `recommendation` of `apply` or `skip`.
+
 **backend/job_analyzer.py**
 Placeholder for now, nothing implemented yet.
 
@@ -66,4 +75,5 @@ python backend/screener.py
 python backend/agents/resume_picker.py
 python backend/agents/rewriter.py
 python backend/agents/context_assembler.py
+python backend/orchestrator.py
 ```
