@@ -7,6 +7,7 @@ venv/
 
 # Output resumes
 backend/output/
+backend/resumes/
 
 # Mac
 .DS_Store
