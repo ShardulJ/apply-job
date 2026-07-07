@@ -31,7 +31,41 @@ guided by a set of style rules: no AI-sounding words like "leverage" or
 "utilize", no em dashes, no weak verbs like "helped" or "assisted",
 chronological order stays untouched, skills stay comma separated, and the
 result should read like a person wrote it. If `ANTHROPIC_API_KEY` isn't
-set, it returns a clearly labeled mock response instead of failing.
+set, it returns a clearly labeled mock response instead of failing. Style
+rules are sent as a cached system prompt (Anthropic prompt caching) and
+every call logs its token count before and after, via
+`backend/utils/token_counter.py`.
+
+**backend/agents/resume_builder.py**
+Given a job description and the full list of resumes, builds a brand new
+tailored one-page resume instead of just tweaking a few bullets. It
+TF-IDF-screens down to the top 3 most relevant resumes, pulls each one's
+experience apart into per-job bullet groups, semantically deduplicates
+near-identical bullets across resume versions (sentence-transformers
+embeddings, drops anything over 0.85 cosine similarity to a bullet already
+kept), fits the remaining content to a 4000 input token budget by trimming
+the least relevant job chunks first, then makes one cached Claude call to
+produce structured JSON (profile summary, education, experience, skills).
+Name and contact info are pulled directly off the top resume rather than
+regenerated, since that's factual data an LLM shouldn't paraphrase.
+
+**backend/pdf_export.py**
+Renders a structured resume (the shape `resume_builder.py` produces) into
+a PDF matching a specific one-page layout: Arial throughout, a bordered
+section header style, bold-lead bullets, right-aligned dates, reverse
+chronological experience, comma-separated skills. `render_resume_fit_one_page`
+is the version actually used in practice: if the content overflows one
+page, it trims bullets from the longest experience entries and re-renders
+until it fits, rather than shrinking fonts or spilling to page 2. Output
+files are named `Resume_{Company}_{JobTitle}_{Date}.pdf` in
+`backend/output/`.
+
+**backend/utils/token_counter.py**
+Shared helper used by the agents above. Wraps the Anthropic client's
+`count_tokens` call, and `fit_chunks_to_budget` takes a list of
+(relevance score, text) chunks and drops the lowest-scored ones until the
+whole prompt fits under a token budget, logging the before and after
+counts.
 
 **backend/agents/context_assembler.py**
 Ties the pieces above together. Given a job description and a list of
@@ -45,9 +79,12 @@ Wires everything above into one pipeline. `run_pipeline(job_description,
 resumes)` runs a cheap TF-IDF screen across all resumes first, and if the
 best score comes back as a skip tier, it logs why and returns early
 without touching the embedding model or the Claude API. Otherwise it picks
-the best resume, assembles context, and rewrites the weak bullets, then
-returns a single dict with `tier`, `best_resume`, `match_score`,
-`tweaked_bullets`, and a final `recommendation` of `apply` or `skip`.
+the best resume, assembles context, estimates the token count before
+calling Claude, and rewrites the weak bullets, then returns a single dict
+with `tier`, `best_resume`, `match_score`, `tweaked_bullets`, and a final
+`recommendation` of `apply` or `skip`. Every run ends with a token usage
+summary: total input tokens, estimated cost at Sonnet's $3 per million
+rate, and any cache hits.
 
 **backend/eval/evaluator.py**
 Checks the orchestrator's output before anything gets sent out. It scans
@@ -97,10 +134,13 @@ you can run any of them directly to see what they do:
 python backend/screener.py
 python backend/agents/resume_picker.py
 python backend/agents/rewriter.py
+python backend/agents/resume_builder.py
 python backend/agents/context_assembler.py
 python backend/orchestrator.py
 python backend/eval/evaluator.py
 python backend/logger.py
+python backend/pdf_export.py
+python backend/utils/token_counter.py
 ```
 
 To run the API server itself:
