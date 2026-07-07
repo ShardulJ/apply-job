@@ -49,6 +49,28 @@ the best resume, assembles context, and rewrites the weak bullets, then
 returns a single dict with `tier`, `best_resume`, `match_score`,
 `tweaked_bullets`, and a final `recommendation` of `apply` or `skip`.
 
+**backend/eval/evaluator.py**
+Checks the orchestrator's output before anything gets sent out. It scans
+the tweaked bullets for banned resume-speak (leverage, utilize, spearhead,
+impactful, synergy) and em dashes, confirms the match score is a real
+number between 0 and 100, and gates a final decision: `apply` if the score
+is above 65 with no style violations, `flag` if the score is above 65 but
+the wording needs cleanup, or `skip` if the score is too low.
+
+**backend/logger.py**
+Appends one row per application to `backend/output/applications_log.csv`
+(timestamp, company, job title, resume used, match score, tier, decision,
+style violations), writing the header row the first time the file is
+created.
+
+**backend/main.py**
+A FastAPI app that ties the whole pipeline together. `POST /analyze` takes
+a job description, company, and job title, runs it through the
+orchestrator and evaluator, logs the outcome to CSV, and returns the full
+result as JSON. `GET /health` is a plain liveness check. CORS is wide open
+since this is meant to be called from a browser extension, and the
+`ANTHROPIC_API_KEY` is loaded from a local `.env` file on startup.
+
 **backend/job_analyzer.py**
 Placeholder for now, nothing implemented yet.
 
@@ -62,8 +84,9 @@ pip install -r requirements.txt
 ```
 
 Drop resume PDFs into `backend/resumes/` (this folder is gitignored, since
-resumes are personal). Set `ANTHROPIC_API_KEY` in your environment if you
-want real (non-mock) output from the rewriter.
+resumes are personal). Create a `backend/.env` file with
+`ANTHROPIC_API_KEY=your-key-here` if you want real (non-mock) output from
+the rewriter; `.env` is gitignored too, so it never leaves your machine.
 
 ## Running things
 
@@ -76,4 +99,22 @@ python backend/agents/resume_picker.py
 python backend/agents/rewriter.py
 python backend/agents/context_assembler.py
 python backend/orchestrator.py
+python backend/eval/evaluator.py
+python backend/logger.py
+```
+
+To run the API server itself:
+
+```bash
+python backend/main.py
+```
+
+Then hit it directly:
+
+```bash
+curl http://localhost:8000/health
+
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"job_description": "...", "company": "Acme Corp", "job_title": "Backend Engineer"}'
 ```
