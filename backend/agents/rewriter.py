@@ -58,7 +58,9 @@ and do not add any commentary."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    rewritten_bullets = response.content[0].text.strip()
+    rewritten_bullets = next(
+        block.text for block in response.content if block.type == "text"
+    ).strip()
 
     return {
         "filename": filename,
