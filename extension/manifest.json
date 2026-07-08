@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Apply Job",
+  "version": "1.0",
+  "description": "Analyze the job posting on this page against your resumes.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://www.linkedin.com/*",
+    "https://*.greenhouse.io/*",
+    "https://*.lever.co/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://*.greenhouse.io/*",
+        "https://*.lever.co/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}

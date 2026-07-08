@@ -111,6 +111,19 @@ since this is meant to be called from a browser extension, and the
 **backend/job_analyzer.py**
 Placeholder for now, nothing implemented yet.
 
+**extension/**
+A Chrome extension (Manifest V3) that scrapes the job posting on the
+current tab and sends it to the backend for analysis. `content.js` reads
+the page (LinkedIn, Greenhouse, or Lever), `popup.js` sends that to
+`POST http://localhost:8000/analyze` and renders the score, decision,
+tweaked bullets, and style violations. See `extension/README.md` for how
+to load it in Chrome.
+
+**Known issue:** scraping currently fails with "Could not read this page"
+on at least LinkedIn. The content script isn't reliably reaching the
+page, likely a stale-tab or selector mismatch issue rather than the
+backend itself. Not yet fixed.
+
 ## Setup
 
 ```bash

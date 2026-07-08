@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Apply Job</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Apply Job</h1>
+    </header>
+
+    <button id="analyzeBtn">Analyze This Job</button>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Analyzing job posting...</p>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+
+    <div id="results" class="results hidden">
+      <div class="score-row">
+        <span id="scoreBadge" class="badge"></span>
+        <span id="decisionText" class="decision"></span>
+      </div>
+
+      <div id="bulletsSection" class="section">
+        <h3>Tweaked Bullets</h3>
+        <ul id="bulletsList"></ul>
+      </div>
+
+      <div id="violationsSection" class="section hidden">
+        <h3>Style Violations</h3>
+        <ul id="violationsList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
